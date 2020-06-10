@@ -134,7 +134,13 @@ const char * WIFI_CONFIG::get_default_hostname()
     uint8_t mac [WL_MAC_ADDR_LENGTH];
     WiFi.macAddress (mac);
 #if defined (ESP_HOST_NAME)
+#if defined (ESP_DEFAULT_NAME_ADD_MAC)
+    if (0 > sprintf (hostname, ESP_DEFAULT_NAME "_%02X%02X%02X", mac[3], mac[4], mac[5]) ) {
+        strcpy (hostname, ESP_DEFAULT_NAME);
+    }
+#else
     strcpy (hostname, ESP_DEFAULT_NAME);
+#endif
 #else
     if (0 > sprintf (hostname, "ESP_%02X%02X%02X", mac[3], mac[4], mac[5]) ) {
         strcpy (hostname, ESP_DEFAULT_NAME);

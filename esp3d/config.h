@@ -20,19 +20,21 @@
 
 //version and sources location
 #define FW_VERSION "2.1.1.b7"
-#define REPOSITORY "https://github.com/luc-github/ESP3D"
+#define REPOSITORY "https://github.com/avazar/ESP3D"
 
 //Customize ESP3D ////////////////////////////////////////////////////////////////////////
 #define ESP8266_MODEL_NAME "ESP8266"
 #define ESP8266_MODEL_URL "http://espressif.com/en/products/esp8266/"
 #define ESP32_MODEL_NAME "ESP32"
 #define ESP32_MODEL_URL "https://www.espressif.com/en/products/hardware/esp-wroom-32/overview"
-#define ESP_MODEL_NUMBER "ESP3D 2.1"
+#define ESP_MODEL_NUMBER "CWM"
 #define ESP_MANUFACTURER_NAME "Espressif Systems"
 #define ESP_MANUFACTURER_URL "http://espressif.com"
 //default name if no mac address is valid
-#define ESP_DEFAULT_NAME "MYESP"
-//if commented name will follow mac address 3 last digits
+#define ESP_DEFAULT_NAME "COMPOSER"
+//add mac address last 3 digits to default name to avoid overlap
+#define ESP_DEFAULT_NAME_ADD_MAC
+//if default name is commented name will follow mac address 3 last digits
 //like ESP_XXXXXX (eg:ESP_028E41) to avoid overlap if several ESP3D
 #define ESP_HOST_NAME ESP_DEFAULT_NAME
 
@@ -107,10 +109,10 @@
 
 //which serial ESP use to communicate to printer (ESP32 has 3 serials available, ESP8266 only one)
 //Uncomment one only
-#define USE_SERIAL_0
+//#define USE_SERIAL_0
 //For ESP32 Only
 //#define USE_SERIAL_1
-//#define USE_SERIAL_2
+#define USE_SERIAL_2
 
 //Pins Definition ////////////////////////////////////////////////////////////////////////
 //-1 means use default pins of your board what ever the serial you choose
@@ -378,7 +380,7 @@ const byte DEFAULT_MASK_VALUE[]  =          {255, 255, 255, 0};
 #define DEFAULT_GATEWAY_VALUE               DEFAULT_IP_VALUE
 const long DEFAULT_BAUD_RATE =          115200;
 #define DEFAULT_PHY_MODE            WIFI_PHY_MODE_11G
-#define DEFAULT_SLEEP_MODE          WIFI_MODEM_SLEEP
+#define DEFAULT_SLEEP_MODE          WIFI_NONE_SLEEP
 #define DEFAULT_CHANNEL             11
 #define DEFAULT_AUTH_TYPE           AUTH_WPA_PSK
 #define DEFAULT_SSID_VISIBLE            1
