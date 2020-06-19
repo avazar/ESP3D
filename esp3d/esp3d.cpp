@@ -88,6 +88,12 @@ DHTesp dht;
 #include "syncwebserver.h"
 #endif
 
+#ifdef AC_CLIENT
+#include "ACClient/ACClient.h"
+#endif
+
+#include "mqtt_client.h"
+
 //Contructor
 Esp3D::Esp3D()
 {
@@ -97,6 +103,7 @@ Esp3D::Esp3D()
 //Begin which setup everything
 void Esp3D::begin(uint16_t startdelayms, uint16_t recoverydelayms)
 {
+    ESP_LOGI(TAG, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
     // init:
     //WiFi.disconnect();
     WiFi.mode (WIFI_OFF);
@@ -216,6 +223,13 @@ void Esp3D::begin(uint16_t startdelayms, uint16_t recoverydelayms)
     if (!wifi_config.Enable_servers() ) {
         ESPCOM::println (F ("Error enabling servers"), PRINTER_PIPE);
     }
+    #ifdef AC_CLIENT
+        if (!ACClient::begin() ) {
+        ESPCOM::println (F ("Error starting AC client"), PRINTER_PIPE);
+    }
+    #endif
+
+
     /*#ifdef ARDUINO_ARCH_ESP8266
         if	(rtc_info->reason	==	REASON_WDT_RST	||
 
@@ -281,6 +295,17 @@ void Esp3D::process()
     if (web_interface->restartmodule) {
         CONFIG::esp_restart();
     }
+//reconnect to wi-fi if lost
+    if (!wifi_config.WiFi_connected)
+    {
+
+        if ((WiFi.getMode() == WIFI_MODE_STA) && (WiFi.status() == WL_DISCONNECTED || WiFi.status() == WL_CONNECTION_LOST || WiFi.status() == WL_IDLE_STATUS) )
+        {
+            if (!wifi_config.Setup()) CONFIG::wait(1000);          
+        }
+
+    }
+
 
 #ifdef ESP_OLED_FEATURE
     static uint32_t last_oled_update= 0;

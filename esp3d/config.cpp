@@ -391,6 +391,20 @@ bool CONFIG::isPasswordValid (const char * password)
     return true;
 }
 
+bool CONFIG::isAcIdValid (const char * id)
+{
+    //limited size
+    if (strlen (id) > MAX_ID_LENGTH) {
+        return false;
+    }
+    //no space allowed
+    for (int i = 0; i < strlen (id); i++)
+        if (id[i] == ' ') {
+            return false;
+        }
+    return true;
+}
+
 bool CONFIG::isLocalPasswordValid (const char * password)
 {
     char c;
@@ -696,12 +710,16 @@ bool CONFIG::write_string (int pos, const char * byte_buffer)
     case EP_USER_PWD:
         maxsize = MAX_LOCAL_PASSWORD_LENGTH;
         break;
+    case AP_AC_CLIENT_ID:
+        maxsize = MAX_ID_LENGTH;
+        break;
     case EP_AP_SSID:
     case EP_STA_SSID:
         maxsize = MAX_SSID_LENGTH;
         break;
     case EP_AP_PASSWORD:
     case EP_STA_PASSWORD:
+    case AP_AC_PASSWORD:
         maxsize = MAX_PASSWORD_LENGTH;
         break;
     case EP_HOSTNAME:
@@ -710,6 +728,7 @@ bool CONFIG::write_string (int pos, const char * byte_buffer)
     case EP_TIME_SERVER1:
     case EP_TIME_SERVER2:
     case EP_TIME_SERVER3:
+    case AP_AC_SERVER:
         maxsize = MAX_DATA_LENGTH;
         break;
     case ESP_NOTIFICATION_TOKEN1:
@@ -912,6 +931,21 @@ bool CONFIG::reset_config()
         return false;
     }
     if (!CONFIG::write_byte (ESP_AUTO_NOTIFICATION, DEFAULT_AUTO_NOTIFICATION_STATE) ) {
+        return false;
+    }
+#endif
+
+#ifdef AC_CLIENT
+    if (!CONFIG::write_string (AP_AC_SERVER, FPSTR (DEFAULT_AC_SERVER)) ) {
+        return false;
+    }
+    if (!CONFIG::write_buffer (AP_AC_PORT, (const byte *) &DEFAULT_AC_PORT, INTEGER_LENGTH) ) {
+        return false;
+    }
+    if (!CONFIG::write_string (AP_AC_CLIENT_ID, FPSTR (DEFAULT_AC_CLIENT_ID)) ) {
+        return false;
+    }
+    if (!CONFIG::write_string (AP_AC_PASSWORD, FPSTR (DEFAULT_AC_PASSWORD)) ) {
         return false;
     }
 #endif
@@ -1854,6 +1888,28 @@ void CONFIG::print_config (tpipe output, bool plaintext, ESPResponseStream  *esp
         ESPCOM::print (F ("\n"), output, espresponse);
     }
 #endif
+
+    //AC Client
+    if (!plaintext)
+    {
+        ESPCOM::print (F ("\"AC_client\":\""), output, espresponse);
+    } else
+    {
+        ESPCOM::print (F ("AC client: "), output, espresponse);
+    }
+#ifdef AC_CLIENT
+    ESPCOM::print (F ("Enabled"), output, espresponse);
+#else
+    ESPCOM::print (F ("Disabled"), output, espresponse);
+#endif
+    if (!plaintext)
+    {
+        ESPCOM::print (F ("\","), output, espresponse);
+    } else
+    {
+        ESPCOM::print (F ("\n"), output, espresponse);
+    }
+
 
     //flag serial
     if (!plaintext)

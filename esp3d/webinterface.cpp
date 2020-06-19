@@ -290,7 +290,7 @@ void CloseSerialUpload (bool iserror, String & filename, int32_t linenb)
     //lets give time to FW to proceed
     wait_for_data(2000);
     purge_serial();
-    web_interface->blockserial = false;
+    ESPCOM::printerSerialUnlock(SERIAL_LOCK_WEBUI);
 }
 #endif //USE_AS_UPDATER_ONLY
 
@@ -358,8 +358,6 @@ WEBINTERFACE_CLASS::WEBINTERFACE_CLASS (int port) : web_server (port)
     //Serial SD management
     web_server.on ("/upload_serial", HTTP_ANY, handle_serial_SDFileList, SDFile_serial_upload);
 
-    blockserial = false;
-    restartmodule = false;
     _head = NULL;
     _nb_ip = 0;
     _upload_status = UPLOAD_STATUS_NONE;

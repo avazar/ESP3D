@@ -26,9 +26,20 @@
 extern WiFiServer * data_server;
 #endif
 
+typedef uint8_t flag_seriallock_t;
+#define SERIAL_NOT_LOCKED            ((flag_seriallock_t)0x00u) /** Not locked */
+#define SERIAL_LOCK_WEBUI            ((flag_seriallock_t)0x01u) /** Serial locked by web ui */
+#define SERIAL_LOCK_ACCLIENT         ((flag_seriallock_t)0x02u) /** Serial locked by Aura Connect client */
+
 class ESPCOM
 {
+private:
+    static flag_seriallock_t lock_flag;
 public:
+    static bool printerSerialLocked(flag_seriallock_t exclude = SERIAL_NOT_LOCKED);
+    static void printerSerialLock(flag_seriallock_t lockReason);
+    static void printerSerialUnlock(flag_seriallock_t lockReason);
+    static void printerSerialUnlockAll();
     static size_t  write(tpipe output, uint8_t d);
     static long readBytes (tpipe output, uint8_t * sbuf, size_t len);
     static long baudRate(tpipe output);
@@ -49,7 +60,6 @@ public:
     static void send2TCP (String data, bool async = false);
     static void send2TCP (const char * data, bool async = false);
 #endif
-    static bool block_2_printer;
 #ifdef ESP_OLED_FEATURE
     static bool block_2_oled;
 #endif

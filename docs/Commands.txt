@@ -121,6 +121,10 @@ Positions:
 * EP_FREE_STRING1			331  //129 bytes 128+1 = string  ; warning does not support multibyte char like chinese
 * EP_DHT_TYPE		460 //1  bytes = flag
 * EP_TARGET_FW		461 //1  bytes = flag
+* AP_AC_SERVER       983 //128 bytes 127+1 = string  ; warning does not support multibyte char like chinese
+* AP_AC_PORT         1111 //4  bytes = int
+* AP_AC_CLIENT_ID    1115 //65 bytes 64 +1 = string ;warning does not support multibyte char like chinese
+* AP_AC_PASSWORD     1180 //65 bytes 64 +1 = string ;warning does not support multibyte char like chinese
 
 *Get available AP list (limited to 30)
 output is JSON or plain text according parameter

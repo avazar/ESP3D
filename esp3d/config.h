@@ -43,6 +43,9 @@
 
 //FEATURES - comment to disable //////////////////////////////////////////////////////////
 
+//AURA_CONNECT_CLIENT
+#define AC_CLIENT
+
 //WEB_UPDATE_FEATURE: allow to flash fw using web UI
 #define WEB_UPDATE_FEATURE
 
@@ -57,7 +60,7 @@
 #define TCP_IP_DATA_FEATURE
 
 //NOTIFICATION_FEATURE : allow to push notifications
-#define NOTIFICATION_FEATURE
+//#define NOTIFICATION_FEATURE
 
 //MKS TFT WIFI support see Wiki for wiring
 //#define MKS_TFT_FEATURE
@@ -91,7 +94,7 @@
 //#define AUTHENTICATION_FEATURE
 
 //WS_DATA_FEATURE: allow to connect serial from Websocket
-#define WS_DATA_FEATURE
+//#define WS_DATA_FEATURE
 
 //TIMESTAMP_FEATURE: Time stamp feature on direct SD  files
 //#define TIMESTAMP_FEATURE
@@ -109,10 +112,10 @@
 
 //which serial ESP use to communicate to printer (ESP32 has 3 serials available, ESP8266 only one)
 //Uncomment one only
-//#define USE_SERIAL_0
+#define USE_SERIAL_0
 //For ESP32 Only
 //#define USE_SERIAL_1
-#define USE_SERIAL_2
+//#define USE_SERIAL_2
 
 //Pins Definition ////////////////////////////////////////////////////////////////////////
 //-1 means use default pins of your board what ever the serial you choose
@@ -320,8 +323,8 @@ typedef enum {
 #define EP_STA_PASSWORD         34   //65 bytes 64 +1 = string ;warning does not support multibyte char like chinese
 #define EP_STA_IP_MODE          99   //1 byte = flag
 #define EP_STA_IP_VALUE         100  //4  bytes xxx.xxx.xxx.xxx
-#define EP_STA_MASK_VALUE           104  //4  bytes xxx.xxx.xxx.xxx
-#define EP_STA_GATEWAY_VALUE            108  //4  bytes xxx.xxx.xxx.xxx
+#define EP_STA_MASK_VALUE       104  //4  bytes xxx.xxx.xxx.xxx
+#define EP_STA_GATEWAY_VALUE    108  //4  bytes xxx.xxx.xxx.xxx
 #define EP_BAUD_RATE            112  //4  bytes = int
 #define EP_STA_PHY_MODE         116  //1 byte = flag
 #define EP_SLEEP_MODE           117  //1 byte = flag
@@ -363,9 +366,14 @@ typedef enum {
 #define EP_SD_CHECK_UPDATE_AT_BOOT   854//1  bytes = flag
 #define ESP_NOTIFICATION_SETTINGS 855//128 bytes 127+1 = string  ; warning does not support multibyte char like chinese
 
-#define EP_EEPROM_VERSION 1017// 6 bytes = ESP3D<V on one byte>
+#define AP_AC_SERVER       983 //128 bytes 127+1 = string  ; warning does not support multibyte char like chinese
+#define AP_AC_PORT         1111 //4  bytes = int
+#define AP_AC_CLIENT_ID    1115 //65 bytes 64 +1 = string ;warning does not support multibyte char like chinese
+#define AP_AC_PASSWORD     1180 //65 bytes 64 +1 = string ;warning does not support multibyte char like chinese
 
-#define LAST_EEPROM_ADDRESS 983
+#define EP_EEPROM_VERSION 2041// 6 bytes = ESP3D<V on one byte>
+
+#define LAST_EEPROM_ADDRESS 1245
 
 //default values
 #define DEFAULT_WIFI_MODE           AP_MODE
@@ -417,6 +425,11 @@ const int DEFAULT_DHT_INTERVAL = 30;
 #define DEFAULT_NOTIFICATION_SETTINGS ""
 #define DEFAULT_AUTO_NOTIFICATION_STATE 1
 #define NOTIFICATION_ESP_ONLINE "Hi, %ESP_NAME% is now online at %ESP_IP%"
+
+const char DEFAULT_AC_SERVER [] PROGMEM = "192.168.1.50";
+const int  DEFAULT_AC_PORT = 3000;
+const char DEFAULT_AC_CLIENT_ID [] PROGMEM = "";
+const char DEFAULT_AC_PASSWORD [] PROGMEM = "";
 
 //Notifications
 #define ESP_PUSHOVER_NOTIFICATION   1
@@ -499,29 +512,31 @@ const uint16_t Setting[][2] = {
 #define MAX_TRY 2000
 
 //sizes
-#define EEPROM_SIZE             1024 //max is 1024
-#define MAX_SSID_LENGTH             32
-#define MIN_SSID_LENGTH             1
+#define EEPROM_SIZE             2040 //max is 1024
+#define MAX_SSID_LENGTH                 32
+#define MIN_SSID_LENGTH                 1
+#define MAX_ID_LENGTH                   64
 #define MAX_PASSWORD_LENGTH             64
 //min size of password is 0 or upper than 8 char
 //so let set min is 0
 #define MIN_PASSWORD_LENGTH             0
-#define MAX_LOCAL_PASSWORD_LENGTH           16
-#define MIN_LOCAL_PASSWORD_LENGTH           1
-#define MAX_DATA_LENGTH             127
-#define MIN_DATA_LENGTH             0
-#define IP_LENGTH               4
-#define INTEGER_LENGTH              4
-#define MAX_HOSTNAME_LENGTH     32
-#define MIN_HOSTNAME_LENGTH     1
-#define WL_MAC_ADDR_LENGTH 6
+#define MAX_LOCAL_PASSWORD_LENGTH       16
+#define MIN_LOCAL_PASSWORD_LENGTH       1
+#define MAX_DATA_LENGTH                 127
+#define MIN_DATA_LENGTH                 0
+#define IP_LENGTH                       4
+#define INTEGER_LENGTH                  4
+#define MAX_HOSTNAME_LENGTH             32
+#define MIN_HOSTNAME_LENGTH             1
+#define WL_MAC_ADDR_LENGTH              6
 
 //EEPROM Version
 #define EEPROM_V0 0
 #define EEPROM_V1 1
 #define EEPROM_V2 2
+#define EEPROM_VER_A 'A'
 
-#define EEPROM_CURRENT_VERSION EEPROM_V2
+#define EEPROM_CURRENT_VERSION EEPROM_VER_A
 
 
 #if defined(ASYNCWEBSERVER)
@@ -581,6 +596,7 @@ public:
     static bool isHostnameValid (const char * hostname);
     static bool isSSIDValid (const char * ssid);
     static bool isPasswordValid (const char * password);
+    static bool isAcIdValid (const char * id);
     static bool isLocalPasswordValid (const char * password);
     static bool isIPValid (const char * IP);
     static char * intTostr (int value);

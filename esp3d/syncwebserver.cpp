@@ -978,9 +978,9 @@ void handle_web_command()
         }
         //send command to serial as no need to transfer ESP command
         //to avoid any pollution if Uploading file to SDCard
-        if ((web_interface->blockserial) == false) {
+        if (!ESPCOM::printerSerialLocked()) {
             //block every query
-            web_interface->blockserial = true;
+            ESPCOM::printerSerialLock(SERIAL_LOCK_WEBUI);
             log_esp3d("Block Serial");
             //empty the serial buffer and incoming data
             log_esp3d("Start PurgeSerial");
@@ -1103,7 +1103,7 @@ void handle_web_command()
                 CONFIG::wait(1);
             }
             log_esp3d("End PurgeSerial");
-            web_interface->blockserial = false;
+            ESPCOM::printerSerialUnlock(SERIAL_LOCK_WEBUI);
             log_esp3d("Release PurgeSerial");
         } else {
             web_interface->web_server.send(200,"text/plain","Serial is busy, retry later!");
@@ -1162,7 +1162,7 @@ void handle_web_command_silent()
     } else {
         //send command to serial as no need to transfer ESP command
         //to avoid any pollution if Uploading file to SDCard
-        if ((web_interface->blockserial) == false) {
+        if (!ESPCOM::printerSerialLocked()) {
             //send command
             ESPCOM::println (cmd, DEFAULT_PRINTER_PIPE);
             web_interface->web_server.send(200,"text/plain","ok");
@@ -1195,7 +1195,7 @@ void handle_serial_SDFileList()
     String jsonfile = "{\"status\":\"" + sstatus + "\"}";
     web_interface->web_server.sendHeader("Cache-Control", "no-cache");
     web_interface->web_server.send(200, "application/json", jsonfile);
-    web_interface->blockserial = false;
+    ESPCOM::printerSerialUnlock(SERIAL_LOCK_WEBUI);
     web_interface->_upload_status=UPLOAD_STATUS_NONE;
 #endif //USE_AS_UPDATER_ONLY
 }
@@ -1264,7 +1264,7 @@ void SDFile_serial_upload()
                     if (web_interface->_upload_status != UPLOAD_STATUS_FAILED) {
                         lineNb=1;
                         //need to lock serial out to avoid garbage in file
-                        (web_interface->blockserial) = true;
+                        ESPCOM::printerSerialLock(SERIAL_LOCK_WEBUI);
                         current_line ="";
                         current_filename = upload.filename;
                         is_comment = false;

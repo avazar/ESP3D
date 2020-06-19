@@ -1271,10 +1271,47 @@ bool COMMAND::execute_command (int cmd, String cmd_params, tpipe output, level_a
             } else {
                 ESPCOM::print ( (const char *) CONFIG::intTostr (bbuf), output, espresponse);
             }
-            ESPCOM::print (F ("\",\"H\":\"Auto notification\",\"O\":[{\"No\":\"0\"},{\"Yes\":\"1\"}]}"), output, espresponse);
+            ESPCOM::println (F ("\",\"H\":\"Auto notification\",\"O\":[{\"No\":\"0\"},{\"Yes\":\"1\"}]}"), output, espresponse);
             
             
 #endif //NOTIFICATION_FEATURE
+
+#ifdef AC_CLIENT
+
+            ESPCOM::println (F (","), output, espresponse);
+            //AC Server URI
+			ESPCOM::print (F ("{\"F\":\"network\",\"P\":\""), output, espresponse);
+            ESPCOM::print ( (const char *) CONFIG::intTostr (AP_AC_SERVER), output, espresponse);
+            ESPCOM::print (F ("\",\"T\":\"S\",\"V\":\""), output, espresponse);
+            if (!CONFIG::read_string (AP_AC_SERVER, sbuf, MAX_DATA_LENGTH) ) {
+                ESPCOM::print ("???", output, espresponse);
+            } else {
+                ESPCOM::print (sbuf, output, espresponse);
+            }
+            ESPCOM::print (F ("\",\"S\":\""), output, espresponse);
+            ESPCOM::print ( (const char *) CONFIG::intTostr (MAX_DATA_LENGTH), output, espresponse);
+            ESPCOM::print (F ("\",\"H\":\"AC Server URI\",\"M\":\""), output, espresponse);
+            ESPCOM::print ( (const char *) CONFIG::intTostr (MIN_DATA_LENGTH), output, espresponse);
+            ESPCOM::print (F ("\"}"), output, espresponse);
+            ESPCOM::println (F (","), output, espresponse);
+
+            //AC Server Port
+            ESPCOM::print (F ("{\"F\":\"network\",\"P\":\""), output, espresponse);
+            ESPCOM::print ( (const char *) CONFIG::intTostr (AP_AC_PORT), output, espresponse);
+            ESPCOM::print (F ("\",\"T\":\"I\",\"V\":\""), output, espresponse);
+            if (!CONFIG::read_buffer (AP_AC_PORT,  (byte *) &ibuf, INTEGER_LENGTH) ) {
+                ESPCOM::print ("???", output, espresponse);
+            } else {
+                ESPCOM::print ( (const char *) CONFIG::intTostr (ibuf), output, espresponse);
+            }
+            ESPCOM::print (F ("\",\"H\":\"AC Server Port\",\"S\":\""), output, espresponse);
+            ESPCOM::print ( (const char *) CONFIG::intTostr (DEFAULT_MAX_DATA_PORT), output, espresponse);
+            ESPCOM::print (F ("\",\"M\":\""), output, espresponse);
+            ESPCOM::print ( (const char *) CONFIG::intTostr (DEFAULT_MIN_DATA_PORT), output, espresponse);
+            ESPCOM::println (F ("\"}"), output, espresponse);
+			
+
+#endif
         }
 
         if (cmd_params == "printer" || cmd_params == "") {
@@ -1595,7 +1632,7 @@ bool COMMAND::execute_command (int cmd, String cmd_params, tpipe output, level_a
     //[ESP500]<gcode>
     case 500: { //send GCode with check sum caching right line numbering
         //be sure serial is locked
-        if ( (web_interface->blockserial) ) {
+        if ( (ESPCOM::printerSerialLocked()) ) {
             break;
         }
         int32_t linenb = 1;
@@ -1783,7 +1820,7 @@ bool COMMAND::execute_command (int cmd, String cmd_params, tpipe output, level_a
     //[ESP700]<filename>
     case 700: { //read local file
         //be sure serial is locked
-        if ( (web_interface->blockserial) ) {
+        if ( (ESPCOM::printerSerialLocked()) ) {
             break;
         }
         cmd_params.trim() ;
@@ -1958,7 +1995,7 @@ bool COMMAND::execute_command (int cmd, String cmd_params, tpipe output, level_a
         ESPCOM::println (CONFIG::GetFirmwareTargetShortName(), output, espresponse);
         break;
     case 810:
-        web_interface->blockserial = false;
+        ESPCOM::printerSerialUnlockAll();
         break;
     case 900:
         parameter = get_param (cmd_params, "", true);

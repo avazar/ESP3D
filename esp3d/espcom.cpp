@@ -40,7 +40,27 @@ WiFiServer * data_server;
 WiFiClient serverClients[MAX_SRV_CLIENTS];
 #endif
 
-bool ESPCOM::block_2_printer = false;
+
+flag_seriallock_t ESPCOM::lock_flag = SERIAL_NOT_LOCKED;
+
+bool ESPCOM::printerSerialLocked(flag_seriallock_t exclude)
+{
+    return !((lock_flag & ~exclude) == SERIAL_NOT_LOCKED);
+}
+
+void ESPCOM::printerSerialLock(flag_seriallock_t lockReason)
+{
+    lock_flag |= lockReason;
+}
+void ESPCOM::printerSerialUnlock(flag_seriallock_t lockReason)
+{
+    lock_flag &= ~lockReason;
+}
+
+void ESPCOM::printerSerialUnlockAll()
+{
+    lock_flag = SERIAL_NOT_LOCKED;
+}
 
 void ESPCOM::bridge(bool async)
 {
@@ -148,9 +168,9 @@ size_t ESPCOM::available(tpipe output)
         break;
     }
 }
-size_t   ESPCOM::write(tpipe output, uint8_t d)
+size_t ESPCOM::write(tpipe output, uint8_t d)
 {
-    if ((DEFAULT_PRINTER_PIPE == output) && (block_2_printer || CONFIG::is_locked(FLAG_BLOCK_SERIAL))) {
+    if ((DEFAULT_PRINTER_PIPE == output) && (CONFIG::is_locked(FLAG_BLOCK_SERIAL))) {
         return 0;
     }
     if ((SERIAL_PIPE == output) && CONFIG::is_locked(FLAG_BLOCK_SERIAL)) {
@@ -226,7 +246,7 @@ void ESPCOM::print (String & data, tpipe output, ESPResponseStream  *espresponse
 }
 void ESPCOM::print (const char * data, tpipe output, ESPResponseStream  *espresponse)
 {
-    if ((DEFAULT_PRINTER_PIPE == output) && ( block_2_printer || CONFIG::is_locked(FLAG_BLOCK_SERIAL))) {
+    if ((DEFAULT_PRINTER_PIPE == output) && (CONFIG::is_locked(FLAG_BLOCK_SERIAL))) {
         return;
     }
     if ((SERIAL_PIPE == output) && CONFIG::is_locked(FLAG_BLOCK_SERIAL)) {
@@ -459,7 +479,7 @@ void ESPCOM::processFromTCP2Serial()
     }
     //check clients for data
     //to avoid any pollution if Uploading file to SDCard
-    if (!((web_interface->blockserial)  || CONFIG::is_locked(FLAG_BLOCK_TCP) || CONFIG::is_locked(FLAG_BLOCK_SERIAL))) {
+    if (!(printerSerialLocked() || CONFIG::is_locked(FLAG_BLOCK_TCP) || CONFIG::is_locked(FLAG_BLOCK_SERIAL))) {
         for (i = 0; i < MAX_SRV_CLIENTS; i++) {
             if (serverClients[i] && serverClients[i].connected() ) {
                 if (serverClients[i].available() ) {

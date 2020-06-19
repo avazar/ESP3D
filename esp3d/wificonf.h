@@ -43,6 +43,7 @@ public:
     MDNSResponder mdns;
 #endif
     bool WiFi_on;
+    bool WiFi_connected;
     WIFI_CONFIG();
     int iweb_port;
     int idata_port;

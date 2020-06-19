@@ -97,6 +97,7 @@ WIFI_CONFIG::WIFI_CONFIG()
     sleep_mode = DEFAULT_SLEEP_MODE;
     _hostname[0] = 0;
     WiFi_on = true;
+    WiFi_connected = false;
 }
 
 int32_t WIFI_CONFIG::getSignal (int32_t RSSI)
@@ -177,6 +178,7 @@ void  WIFI_CONFIG::Safe_Setup()
     ESPCOM::print(local_ip.toString().c_str(), OLED_PIPE);
 #endif
     ESPCOM::println (F ("Safe mode started"), PRINTER_PIPE);
+    WiFi_connected = true;
 }
 
 
@@ -186,6 +188,8 @@ void onWiFiEvent(WiFiEvent_t event)
 
     switch (event) {
     case WIFI_EVENT_STAMODE_CONNECTED:
+
+        wifi_config.WiFi_connected = true;
 #ifndef MKS_TFT_FEATURE
         ESPCOM::println (F ("Connected"), PRINTER_PIPE);
 #endif
@@ -196,6 +200,7 @@ void onWiFiEvent(WiFiEvent_t event)
 #endif
         break;
     case WIFI_EVENT_STAMODE_DISCONNECTED:
+        wifi_config.WiFi_connected = false;
         ESPCOM::println (F ("Disconnected"), PRINTER_PIPE);
 #ifdef ESP_OLED_FEATURE
         OLED_DISPLAY::display_signal(-1);
@@ -352,6 +357,7 @@ bool WIFI_CONFIG::Setup (bool force_ap)
         wifi_config.WiFi_on = true;
         delay (50);
         WiFi.softAP (sbuf, pwd);
+        WiFi_connected = true;
 #ifdef ESP_OLED_FEATURE
         OLED_DISPLAY::display_signal(100);
         OLED_DISPLAY::setCursor(0, 0);

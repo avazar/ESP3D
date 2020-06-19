@@ -78,7 +78,6 @@ public:
     String getContentType (String filename);
     level_authenticate_type is_authenticated();
     bool AddAuthIP (auth_ip * item);
-    bool blockserial;
 #ifdef AUTHENTICATION_FEATURE
     level_authenticate_type ResetAuthIP (IPAddress ip, const char * sessionID);
     auth_ip * GetAuth (IPAddress ip, const char * sessionID);
