@@ -91,6 +91,8 @@ private:
     uint8_t _nb_ip;
 };
 
+bool purge_serial();
+
 extern WEBINTERFACE_CLASS * web_interface;
 
 #endif

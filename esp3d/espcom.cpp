@@ -111,6 +111,31 @@ long ESPCOM::readBytes (tpipe output, uint8_t * sbuf, size_t len)
         break;
     }
 }
+
+char ESPCOM::readByte (tpipe output)
+{
+    switch (output) {
+#ifdef USE_SERIAL_0
+    case SERIAL_PIPE:
+        return Serial.read();
+        break;
+#endif
+#ifdef USE_SERIAL_1
+    case SERIAL_PIPE:
+        return Serial1.read();
+        break;
+#endif
+#ifdef USE_SERIAL_2
+    case SERIAL_PIPE:
+        return Serial2.read();
+        break;
+#endif
+    default:
+        return 0;
+        break;
+    }
+}
+
 long ESPCOM::baudRate(tpipe output)
 {
     long br = 0;

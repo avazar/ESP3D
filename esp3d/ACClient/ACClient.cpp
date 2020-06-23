@@ -29,10 +29,13 @@
 #define MQ_TOPIC_FILE "file"
 #define MQ_TOPIC_TELEMETRY "tel"
 
+#define MAX_FILE_BLOCK_RESENDS 10
+
 esp_mqtt_client_handle_t ACClient::_client;
 char ACClient::_clientId[] = {0};
 
 int ACClient::_fileTransfered = -1;
+int ACClient::_fileSize = 0;
 
 esp_err_t ACClient::mqttEventHandler(esp_mqtt_event_handle_t event)
 {
@@ -49,7 +52,7 @@ esp_err_t ACClient::mqttEventHandler(esp_mqtt_event_handle_t event)
             ESP_ACC_LOGI("sent COM subscribe successful, msg_id=%d", msg_id);
 
             topic = "/" + String(_clientId) + "/" + MQ_TOPIC_FILE;
-            msg_id = esp_mqtt_client_subscribe(client, topic.c_str(), 2);
+            msg_id = esp_mqtt_client_subscribe(client, topic.c_str(), 1);
             ESP_ACC_LOGI("sent FILE subscribe successful, msg_id=%d", msg_id);
 
             topic = "/" + String(_clientId) + "/" + MQ_TOPIC_TELEMETRY;
@@ -59,6 +62,7 @@ esp_err_t ACClient::mqttEventHandler(esp_mqtt_event_handle_t event)
 
         case MQTT_EVENT_DISCONNECTED:
             ESP_ACC_LOGI("MQTT_EVENT_DISCONNECTED");
+            //TODO: Handle file transfer timeout
             break;
 
         case MQTT_EVENT_SUBSCRIBED:
@@ -128,57 +132,142 @@ esp_err_t ACClient::mqttDataHandler(esp_mqtt_event_handle_t event) {
 
 }
 
-uint16_t ACClient::generateErrorMessage(char* dest_buffer, const int buffer_length, const char *message)
+void ACClient::sendFileErrorMessage(const char *message)
 {
     uint16_t len = 0;
+    char buffer[256];
     cJSON *root;
+    String topic = "/" + String(_clientId) + "/" + MQ_TOPIC_FILE;
     root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "type", "error");
+    cJSON_AddStringToObject(root, "response", "error");
     cJSON_AddStringToObject(root, "msg", message);
-    if (cJSON_PrintPreallocated(root, dest_buffer, buffer_length, false))
+    if (cJSON_PrintPreallocated(root, buffer, 256, false))
     {
-        len = strlen(dest_buffer);
+        len = strlen(buffer);
     }
     cJSON_Delete(root);
-    return len;
+    esp_mqtt_client_publish(_client, topic.c_str(), buffer, len, 1, 0);
+
+}
+
+void ACClient::sendFileContinueMessage()
+{
+    char buffer[] = "{response:continue}"; 
+    cJSON *root;
+    String topic = "/" + String(_clientId) + "/" + MQ_TOPIC_FILE;
+    esp_mqtt_client_publish(_client, topic.c_str(), buffer, strlen(buffer), 1, 0);
+}
+
+void ACClient::sendFileFinishMessage()
+{
+    char buffer[] = "{response:finish}"; 
+    cJSON *root;
+    String topic = "/" + String(_clientId) + "/" + MQ_TOPIC_FILE;
+    esp_mqtt_client_publish(_client, topic.c_str(), buffer, strlen(buffer), 1, 0);
+}
+
+void ACClient::sendFileResendBlockMessage(uint32_t index)
+{
+    uint16_t len = 0;
+    char buffer[256];
+    cJSON *root;
+    String topic = "/" + String(_clientId) + "/" + MQ_TOPIC_FILE;
+    root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "response", "resend");
+    cJSON_AddNumberToObject(root, "index", index);
+    if (cJSON_PrintPreallocated(root, buffer, 256, false))
+    {
+        len = strlen(buffer);
+    }
+    cJSON_Delete(root);
+    esp_mqtt_client_publish(_client, topic.c_str(), buffer, len, 1, 0);
 }
 
 void ACClient::receiveFileData(const char *data, int data_len, int current_data_offset, int total_data_len)
 {
     if (ESPCOM::printerSerialLocked(SERIAL_LOCK_ACCLIENT))
     {
-        char data[256];
-        uint16_t data_len = generateErrorMessage(data, 256, "Serial connection to printer is busy");
-        String topic = "/" + String(_clientId) + "/" + MQ_TOPIC_FILE;
-        esp_mqtt_client_publish(_client, topic.c_str(), data, data_len, 1, 0);
+        sendFileErrorMessage("Serial connection to printer is busy");
     }
 
     //Start transfer
     if (_fileTransfered == -1)
     {
-        //cJSON_ParseWithOpts
-        //cJSON *json = cJSON_ParseWithLength(data, data_len);
-        //SerialUploader::beginFileTransfer()
+        cJSON *json = cJSON_ParseWithLength(data, data_len);
+        if (json != nullptr)
+        {
+            char* filename = cJSON_GetObjectItem(json,"filename")->valuestring;
+            uint32_t filesize = cJSON_GetObjectItem(json, "size")->valueint;
+            if (SerialUploader::beginFileTransfer(filename, filesize))
+            {
+                ESP_ACC_LOGI("starting file transfer: %s, %d", filename, filesize);
+                _fileSize = filesize;
+                _fileTransfered = 0;  
+                _fileResends = 0;              
+                sendFileContinueMessage();               
+            }
+            else
+            {
+                sendFileErrorMessage("File transfer can't be started");
+            }          
+            cJSON_Delete(json);
+        }
     }
+    //Transfer in progress
+    else if (_fileTransfered >= 0)
+    {
+        int block_start = int((byte)(*data) << 24 |
+                          (byte)(*(data+1)) << 16 |
+                          (byte)(*(data+2)) << 8 |
+                          (byte)(*(data+3)));
+        if (block_start != _fileTransfered)
+        {
+            _fileResends++;
+            if (_fileResends < MAX_FILE_BLOCK_RESENDS)
+            {
+                sendFileResendBlockMessage(_fileTransfered);
+            }
+            else
+            {
+                _fileTransfered = -1;
+                sendFileErrorMessage("Max block resend number reached");
+                //TODO: cancel file transfer
+            }
+            return;
+        }
+        else
+        {
+            _fileResends = 0;
+            int32_t result = SerialUploader::processFileTransfer(data+sizeof(int), data_len-sizeof(int));
+            if (result!=-1) 
+            {
+                _fileTransfered = result;
+                if (_fileTransfered  == _fileSize) 
+                {
+                    _fileTransfered = -1;
+                    sendFileFinishMessage();
+                }
+                else if (_fileTransfered < _fileSize)
+                {
+                    sendFileContinueMessage();
+                }
+                else
+                {
+                    _fileTransfered = -1;
+                    sendFileErrorMessage("Data size larger than file size");
+                }
+            }
+            else
+            {
+            _fileTransfered = -1;
+            sendFileErrorMessage("File transfer error");
+            }
+            
 
-    ESP_ACC_LOGI("offset:%d", current_data_offset);
-    ESP_ACC_LOGI("len:%d", data_len);
-    ESP_ACC_LOGI("total:%d", total_data_len);
+        }
+    }
 }
 
-/*!< data event, additional context:
-                                        - msg_id               message id
-                                        - topic                pointer to the received topic
-                                        - topic_len            length of the topic
-                                        - data                 pointer to the received data
-                                        - data_len             length of the data for this event
-                                        - current_data_offset  offset of the current data for this event
-                                        - total_data_len       total length of the data received
-                                        Note: Multiple MQTT_EVENT_DATA could be fired for one message, if it is
-                                        longer than internal buffer. In that case only first event contains topic
-                                        pointer and length, other contain data only with current data length
-                                        and current data offset updating.
-                                         */
 
 
 bool ACClient::initClient(const char *uri, uint32_t port, const char *cert_pem, const char *client_id, const char *username, const char *password) {

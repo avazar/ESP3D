@@ -27,13 +27,15 @@ class SerialUploader
 {
 private:
 	static SerialTransfer _fileTransfer;
+    static Stream* _port;
 
     static byte _sdSlot;
     static char _basepath[MAX_BASEPATH_LENGTH+1];
-    static uint32_t _transfered; 
-    static uint32_t _size; 
+    static int32_t _transfered; 
+    static bool waitResponse(uint32_t timeout, char * responce_buffer, uint16_t buffer_length ,const char * const prefix);
 public:
     static void initialize(Stream &port, byte sdSlot, const char * const basePath);
     static bool beginFileTransfer(const char * const filename, uint32_t size);
+    static int32_t processFileTransfer(const char * block, uint32_t block_size);
 
 };

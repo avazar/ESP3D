@@ -42,6 +42,7 @@ public:
     static void printerSerialUnlockAll();
     static size_t  write(tpipe output, uint8_t d);
     static long readBytes (tpipe output, uint8_t * sbuf, size_t len);
+    static char readByte (tpipe output);
     static long baudRate(tpipe output);
     static size_t available(tpipe output);
     static void flush(tpipe output, ESPResponseStream  *espresponse = NULL);

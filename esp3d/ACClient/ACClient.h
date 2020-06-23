@@ -29,9 +29,14 @@ private:
     static char _clientId[MAX_ID_LENGTH + 1];
     static esp_mqtt_client_handle_t _client;
 
-    static int _fileTransfered;
+    static int32_t _fileTransfered;
+    static int32_t _fileSize;
+    static uint8_t _fileResends;
     
-    static uint16_t generateErrorMessage(char* dest_buffer, const int buffer_length, const char *message);
+    static void sendFileErrorMessage(const char *message);
+    static void sendFileContinueMessage();
+    static void sendFileFinishMessage();
+    static void sendFileResendBlockMessage(uint32_t index);
 
     static esp_err_t mqttEventHandler(esp_mqtt_event_handle_t event);
     static inline esp_err_t mqttDataHandler(esp_mqtt_event_handle_t event);
