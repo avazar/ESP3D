@@ -224,9 +224,9 @@ void Esp3D::begin(uint16_t startdelayms, uint16_t recoverydelayms)
         ESPCOM::println (F ("Error enabling servers"), PRINTER_PIPE);
     }
     #ifdef AC_CLIENT
-        if (!ACClient::begin() ) {
-        ESPCOM::println (F ("Error starting AC client"), PRINTER_PIPE);
-    }
+    //if (!ACClient::begin() ) {
+    //    ESPCOM::println (F ("Error starting AC client"), PRINTER_PIPE);
+    //}
     #endif
 
 
@@ -301,7 +301,7 @@ void Esp3D::process()
 
         if ((WiFi.getMode() == WIFI_MODE_STA) && (WiFi.status() == WL_DISCONNECTED || WiFi.status() == WL_CONNECTION_LOST || WiFi.status() == WL_IDLE_STATUS) )
         {
-            if (!wifi_config.Setup()) CONFIG::wait(1000);          
+            //if (!wifi_config.Setup()) CONFIG::wait(1000);          
         }
 
     }

@@ -36,6 +36,7 @@ char ACClient::_clientId[] = {0};
 
 int ACClient::_fileTransfered = -1;
 int ACClient::_fileSize = 0;
+uint8_t ACClient::_fileResends = 0;
 
 esp_err_t ACClient::mqttEventHandler(esp_mqtt_event_handle_t event)
 {
@@ -273,23 +274,23 @@ void ACClient::receiveFileData(const char *data, int data_len, int current_data_
 bool ACClient::initClient(const char *uri, uint32_t port, const char *cert_pem, const char *client_id, const char *username, const char *password) {
     esp_mqtt_client_config_t mqtt_cfg = {};
     mqtt_cfg.event_handle = ACClient::mqttEventHandler;
-    mqtt_cfg.uri = "wss://192.168.1.50/";
-    mqtt_cfg.port = 3001;
-    mqtt_cfg.transport = MQTT_TRANSPORT_OVER_WS;
+    mqtt_cfg.uri = "ws://192.168.1.50/";
+    mqtt_cfg.port = 3000;
+    //mqtt_cfg.transport = MQTT_TRANSPORT_OVER_WS;
     mqtt_cfg.client_id = "cli";
-    mqtt_cfg.buffer_size = 2048;
+    //mqtt_cfg.buffer_size = 2048;
     //mqtt_cfg.username = username,
     //mqtt_cfg.password = password,
     //mqtt_cfg.cert_pem = cert_pem,
 
     strcpy(_clientId, client_id);
     _client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_err_t res = esp_mqtt_client_start(_client);
-    if (res!=ESP_OK) 
-    {
-        ESP_ACC_LOGE("Can't start MQTT client");
-        return false;
-    }
+    //esp_err_t res = esp_mqtt_client_start(_client);
+    //if (res!=ESP_OK) 
+    //{
+    //    ESP_ACC_LOGE("Can't start MQTT client");
+    //    return false;
+    //}
     ESP_ACC_LOGI("[APP] Free memory: %d bytes", esp_get_free_heap_size());
     return true;
 }
@@ -317,6 +318,6 @@ bool ACClient::begin()
         return false;
     }
 
-    return initClient(server_uri, server_port, "", client_id, client_id, password);
-
+    //return initClient(server_uri, server_port, "", client_id, client_id, password);
+    return initClient(server_uri, server_port, "", "cli", client_id, password);
 }
